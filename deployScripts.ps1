@@ -6,8 +6,18 @@ function Format-PaddedOutput ([Int16]$charLength, [string]$leftText, [string]$ri
     Write-Host $paddedText -ForegroundColor $foregroundColor
 }
 
-$targetPath = "C:\Users\p0018192\OneDrive - Parsons Corp\Team PowerShell Scripts"
-$archivePath = "C:\Users\p0018192\OneDrive - Parsons Corp\Team PowerShell Scripts\Archived"
+#The path contained (minimal) identifying information: user name and company--storing this separately to avoid ANY degree of accidental data spill.
+#Without that, all of these scripts are 100% generic and contain zero proprietary or identifying information
+$pathFilename = "C:\devtemp\vsCode\PowerShell\path.csv"
+try { $pathFile = Import-Csv $pathFilename }
+catch {
+    Write-Host "Path File $pathFilename not found."
+    Break
+}
+$basePath = $pathFile[0].PATH
+$targetPath = "$basePath\Team PowerShell Scripts"
+$archivePath = "$basePath\Team PowerShell Scripts\Archived"
+
 
 $targetPathValid = Test-Path $targetPath
 if (!$targetPathValid) {
