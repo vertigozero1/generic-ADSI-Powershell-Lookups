@@ -41,7 +41,6 @@ $moveList = @()
 
 $thisScriptName = Split-Path -Leaf $PSCommandPath
 
-#Validate file list
 foreach ($sourceFilePath in $scriptsInFolder) {
     $moving = $true
 
@@ -55,7 +54,7 @@ foreach ($sourceFilePath in $scriptsInFolder) {
         if ($filename.Contains($string)) { 
             $moving = $false 
             Write-Host "Excluding $filename (`"$string`")" -ForegroundColor DarkGray
-            Break #File has been identified for exclusion, no need to keep checking it
+            Break
         }
     }
 
@@ -100,7 +99,6 @@ foreach ($sourceFile in $moveList) {
         }
 
         try {
-            #Test for an existing file which would collide with our planned move
             $archivePathValid = Test-Path $archiveFile
             if ($archivePathValid) {
                 Format-PaddedOutput 100 " $archiveFilename already present..." -foregroundColor Yellow -piped
