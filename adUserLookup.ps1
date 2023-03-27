@@ -233,7 +233,6 @@ PROCESS {
     }
 
     function Get-FunctionalManager([string]$employeeDN, [switch]$recursive = $false) {
-        #Get property values for the specified user
         $user = Expand-UserList($employeeDN)
         $fmDN = $user.ManagerDN
         #Ensure that they're not their own FM (should only apply to CEO)
@@ -243,7 +242,6 @@ PROCESS {
             $functionalManager = Expand-UserList($fmDN)
             $grandBossDN = $functionalManager.ManagerDN        
             if ($recursive) { 
-                #Add the current user and their FM to the output list
                 $global:fmList += $user
                 $global:fmList += $functionalManager
                 #If we haven't reached the top, kick it off for the boss's boss
@@ -279,7 +277,7 @@ PROCESS {
     #Prepare and execute primary query
     $searcher = ([adsisearcher]"(&(objectCategory=Person)(objectClass=User))")
     if ($defaultProperties) {
-        $properties = "samaccountname", "name", "employeetype", "usperson", "company", "title", "manager", "userprincipalname", "co", "physicaldeliveryofficename", "firstworkingday", "whencreated", "pwdlastset", "directreports", "memberof", "managedobjects"
+        $properties = "samaccountname", "name", "employeetype", "usperson", "company", "title", "manager", "userprincipalname", "co", "physicaldeliveryofficename", "telephonenumber", "firstworkingday", "whencreated", "pwdlastset", "directreports", "memberof", "managedobjects"
         foreach ($property in $properties) { $searcher.PropertiesToLoad.Add($property) | out-null }
     }
 
@@ -456,6 +454,7 @@ END {
                     Title          = $user.title -join ";"
                     Manager        = $fmName
                     Email          = $user.userprincipalname -join ";"
+                    OfficePhone    = $user.telephonenumber -join ";"
                     Country        = $user.co -join ";"
                     Office         = $user.physicaldeliveryofficename -join ";"
                     StartDate      = $user.firstworkingday -join ";"
@@ -467,8 +466,8 @@ END {
                 $tempObj
             }
             $result = $tempResult
-            if ($export) { Write-Output $result | Select-Object ID, Name, Status, USPerson, Title, Manager, Email, Country, Office, StartDate, PwdLastSet, DirectReports, MemberOf, ManagedObjects | Sort-Object ID | Out-File -FilePath $targetFile -Append }
-            else { Write-Output $result | Select-Object ID, Name, Status, USPerson, Title, Manager, Email, Country, Office, StartDate, PwdLastSet, DirectReports, MemberOf, ManagedObjects | Sort-Object ID }
+            if ($export) { Write-Output $result | Select-Object ID, Name, Status, USPerson, Title, Manager, Email, OfficePhone, Country, Office, StartDate, PwdLastSet, DirectReports, MemberOf, ManagedObjects | Sort-Object ID | Out-File -FilePath $targetFile -Append }
+            else { Write-Output $result | Select-Object ID, Name, Status, USPerson, Title, Manager, Email, OfficePhone, Country, Office, StartDate, PwdLastSet, DirectReports, MemberOf, ManagedObjects | Sort-Object ID }
         }
         else { $result | Sort-Object | Format-Table -AutoSize }
     }
