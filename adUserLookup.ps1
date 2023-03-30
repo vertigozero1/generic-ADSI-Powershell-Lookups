@@ -345,6 +345,7 @@ PROCESS {
     if (!$result) {
         if ($resultProperty) { Write-Host "$resultProperty not found in current domain for account with $queryProperty = $value" -ForegroundColor Red }
         else { Write-Host "Account with $queryProperty = $value not found in current domain" -ForegroundColor Red }
+        break
     }
     else {
         #($result)
