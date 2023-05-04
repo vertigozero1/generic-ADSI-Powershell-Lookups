@@ -339,7 +339,7 @@ PROCESS {
             Write-Host "$queryProperty - $value not found in current domain" -ForegroundColor Red
             return
         }
-    } 
+    }
 
     #Validate that results are present
     if (!$result) {

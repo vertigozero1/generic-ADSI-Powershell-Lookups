@@ -60,7 +60,7 @@ function Confirm-Input ([string]$groupName, [string]$targetPath, [switch]$export
         if ($userInput -eq 1) { Break }
     }
 
-    if($recursive -and $count){
+    if ($recursive -and $count) {
         Write-Host "Recursive and Count arguments are mutually exclusive, since recursion requires additional queries.`nCount is intended to return an immediate count of top-level root group members.`nIgnoring the recursive argument, and only using count." -ForegroundColor Yellow
         $recursive = $false
     }
@@ -212,7 +212,7 @@ function Get-GroupMembers ($objectDNs) {
             $totalObjects += $objectDNs.count 
             $tempObjectDNs = $objectDNs
         }
-        if($count){
+        if ($count) {
             Write-Host "Total initial count of top-level members: $totalObjects`n" -ForegroundColor Green
             break
         }

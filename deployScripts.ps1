@@ -18,7 +18,6 @@ $basePath = $pathFile[0].PATH
 $targetPath = "$basePath\Team PowerShell Scripts"
 $archivePath = "$basePath\Team PowerShell Scripts\Archived"
 
-
 $targetPathValid = Test-Path $targetPath
 if (!$targetPathValid) {
     Write-Host "Destination folder $targetPath invalid." -ForegroundColor Red
