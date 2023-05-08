@@ -362,7 +362,7 @@ PROCESS {
                 $length = $groupDN.Length - $commaPosition
                 $dnRemainder = $groupDN.Substring($commaPosition, $length)
                 $commaPosition = $dnRemainder.IndexOf(",") - 3
-                $groupType = $dnRemainder.Substring(3, $commaPosition)      
+                $groupType = $dnRemainder.Substring(3, $commaPosition)
 
                 $tempHT = @{
                     Name = $groupName
