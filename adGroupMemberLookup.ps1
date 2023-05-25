@@ -268,7 +268,7 @@ $groupCount = $global:groupArray.count
 try { 
     #Clear-Host
     if ($recursive) { Write-Host "Recursive search enabled--all nested group members are represented in the data below." -ForegroundColor Cyan }
-    Write-Host "`n$groupName members: $userCount user(s), $serviceAccountCount account(s), $groupCount and nested group(s)"
+    Write-Host "`n$groupName members: $userCount user(s), $serviceAccountCount account(s), and $groupCount nested group(s)"
     Write-Host "Current as of $dateTime"
     Write-Host "---------------------------------"
     $propertiesForExport = "Type", "ID", "Name", "Status", "USPerson", "BU", "Title", "Manager", "Email", "Office", "StartDate", "WhenCreated", @{Name = "pwdLastSet"; Expression = { [datetime]::FromFileTime($_.pwdLastSet) } }, "GroupMembership", "MemberCount", "Description"
