@@ -5,7 +5,6 @@
 ###
 ### Initialization and input validation
 ###
-
 if (!$sourceFilePath) {
     Write-Host "ERROR: Missing required parameter value for sourceFilePath, which should contain the full path to the input CSV file. "
     Write-Host "    *NOTE* The first (header) row of the CSV must contain the name of the AD property which will be used to query each line item value"
@@ -44,18 +43,18 @@ Write-Host "`nSource file successfully imported. $fileSize line(s) found, includ
 Write-Host "Using file header `"$lookupFieldName`" as the property to query for each line item value." -ForegroundColor Cyan
 
 #Establish some quick aliases for simplicity of querying--I know it's a hideous way to format a switch/case, but that's how the auto-formatting style does it \_(-.-)_/
-if ($queryProperty -eq "id" -or 
-    $queryProperty -eq "empid" -or 
-    $queryProperty -eq "employeeid") 
-{ $queryProperty = "samaccountname" }
+if ($lookupFieldName -eq "id" -or 
+    $lookupFieldName -eq "empid" -or 
+    $lookupFieldName -eq "employeeid") 
+{ $lookupFieldName = "samaccountname" }
 
-switch ($queryProperty) {
-    "email" { $queryProperty = "userprincipalname" }
-    "dn" { $queryProperty = "distinguishedname" }
-    "phone" { $queryProperty = "telephonenumber" }
-    "cell" { $queryProperty = "othermobile" }
-    "mobile" { $queryProperty = "othermobile" }
-    "office" { $queryProperty = "physicaldeliveryofficename" }
+switch ($lookupFieldName) {
+    "email" { $lookupFieldName = "userprincipalname" }
+    "dn" { $lookupFieldName = "distinguishedname" }
+    "phone" { $lookupFieldName = "telephonenumber" }
+    "cell" { $lookupFieldName = "othermobile" }
+    "mobile" { $lookupFieldName = "othermobile" }
+    "office" { $lookupFieldName = "physicaldeliveryofficename" }
 }
 
 $userArray = @()
@@ -122,7 +121,7 @@ $csv | ForEach-Object {
         $fileSize -= 1
         #If the first lookup failed, validate the lookup field with user prior to continuing
         if ($userCount -lt 1 -and $fileSize -ge 1) {
-            $title = "Initial query failed; would you like to continue querying the remaining $fileSize lines?"
+            $title = "Initial query: '$queryText' failed; would you like to continue querying the remaining $fileSize lines?"
             $choices = @(
                 ("&Y", "Yes; the file is valid, it was just an unfortunate first line that happened not to be found. We're good, please proceed."), #0
                 ("&N", "No... on second thought, that's doesn't look right. Stop now, and I'll go adjust the source file before trying again.") #1
