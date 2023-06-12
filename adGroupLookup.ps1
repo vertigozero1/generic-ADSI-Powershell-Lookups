@@ -25,7 +25,7 @@ $groupSearch.Sort.PropertyName = "name"
 $groupSearch.Sort.Direction = "ascending"
 
 #List of properties--modify this with any additional properties, in the order you want them to be displayed
-$groupProperties = "name", "distinguishedname", "description", "managedby", "msexchcomanagedbylink", "managedobjects", "member", "memberof"
+$groupProperties = "name", "distinguishedname", "description", "managedby", "msexchcomanagedbylink", "managedobjects", "mail", "member", "memberof"
 foreach ($property in $groupProperties) { $groupSearch.PropertiesToLoad.Add($property) | out-null }
 
 #Actual query for names and group properties
