@@ -197,7 +197,10 @@ BEGIN {
         }
         $dateTime = $((Get-Date -Format "yyyyMMdd-HHmm").ToString())
 
-        if (!$allProperties) { $resultType = "$resultProperty for $queryProperty $value" }
+        if (!$allProperties) { $resultType = "$resultProperty for $queryProperty" }
+        #TODO: pared this down to fix bug that resulted where it was attempting to write a file with * in the filename on wildcarding requests
+        #TODO: this is a quick kludge to get results--fix it with a conditional to check for $wildcard and take appropriate action
+        #TODO: original line == if (!$allProperties) { $resultType = "$resultProperty for $queryProperty $value" }
         else { $resultType = "allProperties for $queryProperty $value" }
         $targetFile = $targetPath + "\$dateTime $resultType.txt"
     }
@@ -387,7 +390,8 @@ END {
             if ($allProperties) { $result | Select-Object Name, Value | Sort-Object Name | Format-Table -AutoSize | Out-File -FilePath $targetFile -Append }
             elseif ($resultIsDNList) { $result | Select-Object Name, Type | Sort-Object Name | Format-Table -AutoSize | Out-File -FilePath $targetFile -Append }
             elseif ($returnAsset) { $result | ForEach-Object { Write-Output $_ | Format-Table } }
-            else { $result | Sort-Object | Out-File -FilePath $targetFile -Append | Out-File -FilePath $targetFile -Append }
+            else { $result | Sort-Object | Format-Table -AutoSize | Out-File -FilePath $targetFile -Append }
+            #TODO: fix -export formatting; not producing a table for some reason that's probably patently obvious when I'm not looking at this after hitting a bunch of other walls face-first
             Write-Host "Results successfully exported to $targetFile" -ForegroundColor Green
         }
         catch {
@@ -397,6 +401,8 @@ END {
             Write-Host "Unexpected error occurred while attempting to write to destination file $targetFile" -ForegroundColor Red
             Write-Host "---------------------------------" -ForegroundColor Red
             Write-Host "Line number $lineNumber : $errorMessage" -ForegroundColor Red
+            Write-Host "Returning output to screen instead:"
+            $result | Sort-Object | Format-Table -AutoSize 
         }
     }
     else { 
