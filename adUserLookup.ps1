@@ -280,7 +280,7 @@ PROCESS {
     #Prepare and execute primary query
     $searcher = ([adsisearcher]"(&(objectCategory=Person)(objectClass=User))")
     if ($defaultProperties) {
-        $properties = "samaccountname", "name", "employeetype", "usperson", "company", "title", "manager", "userprincipalname", "co", "physicaldeliveryofficename", "telephonenumber", "firstworkingday", "whencreated", "pwdlastset", "directreports", "memberof", "managedobjects"
+        $properties = "samaccountname", "name", "employeetype", "usperson", "company", "title", "manager", "userprincipalname", "co", "physicaldeliveryofficename", "telephonenumber", "firstworkingday", "whencreated", "pwdlastset", "lastlogontimestamp", "directreports", "memberof", "managedobjects"
         foreach ($property in $properties) { $searcher.PropertiesToLoad.Add($property) | out-null }
     }
 
@@ -466,6 +466,7 @@ END {
                     Office         = $user.physicaldeliveryofficename -join ";"
                     StartDate      = $user.firstworkingday -join ";"
                     PwdLastSet     = [datetime]::FromFileTime($user.pwdlastset[0])
+                    LastLogon      = [datetime]::FromFileTime($user.lastlogontimestamp[0])
                     DirectReports  = $user.directreports.count
                     MemberOf       = $user.memberof.count
                     ManagedObjects = $user.managedobjects.count
@@ -473,8 +474,8 @@ END {
                 $tempObj
             }
             $result = $tempResult
-            if ($export) { Write-Output $result | Select-Object ID, Name, Status, USPerson, Title, Manager, Email, OfficePhone, Country, Office, StartDate, PwdLastSet, DirectReports, MemberOf, ManagedObjects | Sort-Object ID | Out-File -FilePath $targetFile -Append }
-            else { Write-Output $result | Select-Object ID, Name, Status, USPerson, Title, Manager, Email, OfficePhone, Country, Office, StartDate, PwdLastSet, DirectReports, MemberOf, ManagedObjects | Sort-Object ID }
+            if ($export) { Write-Output $result | Select-Object ID, Name, Status, USPerson, Title, Manager, Email, OfficePhone, Country, Office, StartDate, PwdLastSet, LastLogon, DirectReports, MemberOf, ManagedObjects | Sort-Object ID | Out-File -FilePath $targetFile -Append }
+            else { Write-Output $result | Select-Object ID, Name, Status, USPerson, Title, Manager, Email, OfficePhone, Country, Office, StartDate, PwdLastSet, LastLogon, DirectReports, MemberOf, ManagedObjects | Sort-Object ID }
         }
         else { $result | Sort-Object | Format-Table -AutoSize }
     }
