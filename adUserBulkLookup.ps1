@@ -1,4 +1,4 @@
-﻿param([string]$sourceFilePath, [string]$targetPath);
+﻿param([string]$sourceFilePath, [string]$targetPath, [switch]$assignedAssetLookup);
 #Test values for simplified debugging in IDE
 #$sourceFilePath = "C:\devtemp\vscode\powershell\test.csv"
 
@@ -10,6 +10,7 @@ if (!$sourceFilePath) {
     Write-Host "    *NOTE* The first (header) row of the CSV must contain the name of the AD property which will be used to query each line item value"
     Write-Host "Example usage: -sourceFilePath `"C:\Temp\idList.csv`" -targetPath 'C:\Temp\'"
     Write-Host "             : -sourceFilePath `"idList.csv`""
+    Write-Host "             : -sourceFilePath `"idList.csv`" -resultProperty name"
     Return
 }
 if (!$targetPath) { $targetPath = (Get-Location).Path }
@@ -41,12 +42,16 @@ $lookupFieldName = $csv[0].psobject.properties.name.ToString().ToLower()
 
 Write-Host "`nSource file successfully imported. $fileSize line(s) found, including header." -ForegroundColor Green
 Write-Host "Using file header `"$lookupFieldName`" as the property to query for each line item value." -ForegroundColor Cyan
+if ($assignedAssetLookup) { Write-Host "assignedAssetLookup switch enabled--querying workstation info for each specified user account." -ForegroundColor Cyan }
 
-#Establish some quick aliases for simplicity of querying--I know it's a hideous way to format a switch/case, but that's how the auto-formatting style does it \_(-.-)_/
+if ($lookupFieldName -contains "asset" -or
+    $lookupFieldName -contains "workstation" -or
+    $lookupFieldName -contains "computer") 
+{ $queryByAsset = $true }
+
 if ($lookupFieldName -eq "id" -or 
-    $lookupFieldName -eq "empid" -or 
-    $lookupFieldName -eq "employeeid") 
-{ $lookupFieldName = "samaccountname" }
+    $lookupFieldName -eq "empid") 
+{ $lookupFieldName = "employeeid" }
 
 switch ($lookupFieldName) {
     "email" { $lookupFieldName = "userprincipalname" }
@@ -75,6 +80,7 @@ $csv | ForEach-Object {
         $percentComplete = ($i / $totalObjects) * 100
         if ($percentComplete -gt 100) { $percentComplete = 100 } #shouldn't happen, but prevent it just in case
     }
+    else { $percentComplete = 100 }
 
     [string]$value = $_.psobject.properties.value.ToString()
     $queryText = "$lookupFieldName : $value"
@@ -89,6 +95,28 @@ $csv | ForEach-Object {
             Return
         }
     }
+    
+    if ($queryByAsset) {
+        [string]$assetOwnerDN = ([adsisearcher]"(&(objectClass=computer)(objectCategory=computer)(cn=$value))").FindOne().Properties.managedby
+        if ($assetOwnerDN) {
+            #Write-Host "Asset found." -ForegroundColor Green
+            $assetOwnerID = ([adsisearcher]"(&(objectCategory=Person)(objectClass=User)(distinguishedname=$assetOwnerDN))").FindOne().Properties.samaccountname
+            if ($assetOwnerID) {
+                $lookupFieldName = "samaccountname"
+                $value = $assetOwnerID
+            }
+            else {
+                Write-Host "Asset owner with distinguishedname - $assetOwnerDN not found in current domain" -ForegroundColor Red
+                $notFoundArray += "`n$value"
+                return
+            }
+        }
+        else {
+            Write-Host "$queryProperty - $value not found in current domain" -ForegroundColor Red
+            $notFoundArray += "`n$value"
+            return
+        }
+    }
 
     #Prepare the query
     $userSearch = ([adsisearcher]"(&(objectCategory=Person)(objectClass=User)($lookupFieldName=$value))")
@@ -97,9 +125,9 @@ $csv | ForEach-Object {
     #    *NOTE* TO MODIFY THE LIST OF PROPERTIES RETURNED:
     #           Add the desired values to the list below, using the existing ones as an example.
     #           Make sure that you ALSO modify the splatted hash tables and output section at the end of the script, to match the values
-    $userProperties = "employeeid", "name", "employeetype", "usperson", "company", "title", "manager", "userprincipalname", "physicaldeliveryofficename", "firstworkingday"
+    $userProperties = "employeeid", "name", "employeetype", "usperson", "company", "title", "manager", "userprincipalname", "physicaldeliveryofficename", "firstworkingday", "distinguishedname"
     foreach ($property in $userProperties) { $userSearch.PropertiesToLoad.Add($property) | out-null }
-    
+ 
     #Actual query
     $user = $userSearch.FindAll().Properties
 
@@ -153,17 +181,26 @@ $csv | ForEach-Object {
             $fmDN = $report.manager -join ";"
             $fmName = $fmDN.substring(3, ($fmDN.IndexOf(",OU") - 3))
 
-            $tempObj = [pscustomobject] @{
-                ID        = $report.employeeid -join ";"
-                Name      = $report.name -join ";"
-                Status    = $report.employeetype -join ";"
-                USPerson  = $report.usperson -join ";"
-                BU        = $report.company -join ";"
-                Title     = $report.title -join ";"
-                Manager   = $fmName
-                Email     = $report.userprincipalname -join ";"
-                Office    = $report.physicaldeliveryofficename -join ";"
-                StartDate = $report.firstworkingday -join ";"
+            if ($resultProperty) {
+                #TODO: FIX THIS WITH WHATEVER SOLUTION FROM LINE #191
+                $tempObj = [PSCustomObject] @{
+                    Name = $report.$resultProperty -join ";"
+                }
+            }
+            else {
+                $tempObj = [pscustomobject] @{
+                    ID        = $report.employeeid -join ";"
+                    Name      = $report.name -join ";"
+                    Status    = $report.employeetype -join ";"
+                    USPerson  = $report.usperson -join ";"
+                    BU        = $report.company -join ";"
+                    Title     = $report.title -join ";"
+                    Manager   = $fmName
+                    Email     = $report.userprincipalname -join ";"
+                    Office    = $report.physicaldeliveryofficename -join ";"
+                    StartDate = $report.firstworkingday -join ";"
+                    DN        = $report.distinguishedname -join ";"
+                }
             }
             #$userArray += $tempObj
             $tempObj
@@ -188,6 +225,42 @@ $csv | ForEach-Object {
             Country   = $user.co -join ";"
             Office    = $user.physicaldeliveryofficename -join ";"
             StartDate = $user.firstworkingday -join ";"
+            DN        = $user.distinguishedname -join ";"
+        }
+        if ($assignedAssetLookup) {
+            if ($user.distinguishedname) {
+                $assetLookup = $true
+                $userDN = $user.distinguishedname
+                $assetSearcher = ([adsisearcher]"(&(objectClass=computer)(objectCategory=computer)(managedby=$userDN))")
+                $assetProperties = "distinguishedname", "name", "lastlogon", "operatingsystem", "operatingsystemversion", "dnshostname", "memberof", "whencreated"
+                foreach ($property in $assetProperties) { $assetSearcher.PropertiesToLoad.Add($property) | Out-Null }
+                $result = $assetSearcher.FindAll().Properties
+
+                $tempObj = [pscustomobject] @{
+                    OwnerID   = $user.employeeid -join ";"
+                    OwnerName = $user.name -join ";"
+                    DN        = $result.distinguishedname -join ";"
+                    Name      = $result.name -join ";"
+                    LastLogon = $result.lastlogon -join ";"
+                    OS        = $result.operatingsystem -join ";"
+                    OSVersion = $result.operatingsystemversion -join ";"
+                    DNSName   = $result.dnshostname -join ";"
+                    MemberOf  = $result.memberof
+                    Created   = $result.whencreated -join ";"
+                } 
+            }
+            else { 
+                $progressParameters = @{
+                    Id              = 1
+                    Activity        = "Processing bulk query by $lookupFieldName..."
+                    Status          = "$queryText... not found"
+                    PercentComplete = $percentComplete
+                }
+                Write-Progress @progressParameters
+        
+                $notFoundArray += "`n$value"
+                Return 
+            }
         }
         #Add results to the output array and increase the number of found members
         $userArray += $tempObj
@@ -201,8 +274,11 @@ $csv | ForEach-Object {
 try { 
     Write-Host " "
     Write-Host "Found $userCount users from "$sourceFilePath -ForegroundColor Green
-    Write-Output $userArray | Sort-Object name | Select-Object ID, Name, Status, USPerson, BU, Title, Manager, Email, Office, StartDate | Export-CSV -path $targetFile -NoTypeInformation 
-
+    if ($resultProperty) { Write-Output $userArray | Sort-Object | Export-CSV -path $targetFile -NoTypeInformation }
+    elseif ($assetLookup) { Write-Output $userArray | Sort-Object OwnerID | Select-Object OwnerID, OwnerName, Name, DNSName, OS, OSVersion, Created, LastLogon | Export-CSV -path $targetFile -NoTypeInformation }
+    else {
+        Write-Output $userArray | Sort-Object Name | Select-Object ID, Name, Status, USPerson, BU, Title, Manager, Email, Office, StartDate | Export-CSV -path $targetFile -NoTypeInformation
+    }
     if ($notFoundArray.Count -gt 0) { 
         Write-Host $notFoundArray.Count "not found" -ForegroundColor Red
         [string]$output = "`nNot found:`n----------" + $notFoundArray 
