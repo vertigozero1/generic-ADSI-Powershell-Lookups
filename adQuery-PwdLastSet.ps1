@@ -12,7 +12,7 @@ $targetFile = $targetPath + "\$dateTime adQuery-PwdLastSet-4Days.txt"
 
 $startDate = (Get-Date).AddDays(-18).ToFileTimeUTC()
 $endDate = (Get-Date).AddDays(-14).ToFileTimeUTC()
-$ADSIDate = (Get-Date).AddDays(-4).ToFileTimeUTC()
+#$ADSIDate = (Get-Date).AddDays(-4).ToFileTimeUTC()
 try {
     #$searcher = ([adsisearcher]"(&(objectCategory=Person)(objectClass=User))")
     #$searcher.Filter = "(&(pwdLastSet>=$ADSIDate))"
